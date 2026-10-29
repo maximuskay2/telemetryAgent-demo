@@ -28,7 +28,7 @@ def acquire_all(items: list[str]) -> list[tuple[str, threading.Lock]]:
     concurrent callers can never deadlock. BUG: uses caller order.
     """
     acquired = []
-    for item in items:  # BUG: should iterate over sorted(items)
+    for item in sorted(items):
         lock = _lock_for(item)
         lock.acquire()
         acquired.append((item, lock))
