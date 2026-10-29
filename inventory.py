@@ -2,10 +2,8 @@
 
 Stdlib only, so the file runs unmodified in the Modal Sandbox image.
 
-Seeded bug: `acquire_all` acquires locks in caller order instead of canonical
-(sorted) order, so concurrent transfers over the same items can deadlock.
-The agent must diagnose this from the deadlock log sample and generate a fix;
-this file is the buggy original and must stay buggy.
+Fixed: `acquire_all` acquires locks in canonical (sorted) order so
+concurrent transfers over the same items cannot deadlock.
 """
 
 from __future__ import annotations
@@ -22,13 +20,13 @@ def _lock_for(item: str) -> threading.Lock:
 
 
 def acquire_all(items: list[str]) -> list[tuple[str, threading.Lock]]:
-    """Acquire one lock per item; return locks in acquisition order.
-
-    Contract: acquisition order must be canonical (sorted by item name) so
-    concurrent callers can never deadlock. BUG: uses caller order.
-    """
-    acquired = []
-    for item in items:  # BUG: should iterate over sorted(items)
+    """Acquire one lock per item in canonical (sorted) order."""
+    acquired: list[tuple[str, threading.Lock]] = []
+    seen: set[str] = set()
+    for item in sorted(items):
+        if item in seen:
+            continue
+        seen.add(item)
         lock = _lock_for(item)
         lock.acquire()
         acquired.append((item, lock))
